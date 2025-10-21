@@ -1,71 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import GoogleMap from './components/GoogleMap';
+import dynamic from 'next/dynamic';
+import { radioStations } from '@/app/data/stations';
+import type { RadioStation } from '@/app/types';
 
-interface RadioStation {
-  id: number;
-  name: string;
-  frequency: string;
-  location: string;
-  address: string;
-  signalStrength: string;
-  transmissionRange: string;
-  description: string;
-  color: string;
-  coordinates: { lat: number; lng: number };
-}
-
-const radioStations: RadioStation[] = [
-  {
-    id: 1,
-    name: "Radio Yauyipampa",
-    frequency: "98.5 MHz",
-    location: "Yauyipampa (Planta)",
-    address: "Yauyipampa, Perú",
-    signalStrength: "Strong (95%)",
-    transmissionRange: "50 km radius",
-    description: "Emisora principal ubicada en la planta de Yauyipampa, transmitiendo las mejores noticias y entretenimiento de la región.",
-    color: "#F28211",
-    coordinates: { lat: -10.06425, lng: -76.2683611 }
-  },
-  {
-    id: 2,
-    name: "Radio Pachar",
-    frequency: "101.2 MHz",
-    location: "Pachar",
-    address: "Pachar, Perú",
-    signalStrength: "Moderate (85%)",
-    transmissionRange: "45 km radius",
-    description: "Radio comunitaria de Pachar, conectando a la comunidad con música, noticias locales y programación cultural.",
-    color: "#1C20E9",
-    coordinates: { lat: -10.264722, lng: -76.269444 }
-  },
-  {
-    id: 3,
-    name: "Radio Alto Perú",
-    frequency: "95.7 MHz",
-    location: "Barrio Alto Perú",
-    address: "Barrio Alto Perú, Perú",
-    signalStrength: "Strong (90%)",
-    transmissionRange: "40 km radius",
-    description: "Emisora del Barrio Alto Perú, ofreciendo programación variada y de calidad para toda la familia.",
-    color: "#3B82F6",
-    coordinates: { lat: -10.3413889, lng: -76.295 }
-  },
-  {
-    id: 4,
-    name: "Radio Huancampata",
-    frequency: "103.9 MHz",
-    location: "Huancampata (Piedra Larga)",
-    address: "Huancampata, Piedra Larga, Perú",
-    signalStrength: "Strong (88%)",
-    transmissionRange: "42 km radius",
-    description: "Radio Huancampata, transmitiendo desde Piedra Larga con las mejores frecuencias de la zona.",
-    color: "#8B5CF6",
-    coordinates: { lat: -10.36, lng: -76.117778 }
-  }
-];
+// Importación dinámica para evitar SSR con Leaflet
+const MapComponent = dynamic(() => import('./components/MapComponent'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-[#0a0a0c]">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-[#F28211] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-white text-sm font-medium">Cargando mapa...</p>
+        <p className="text-gray-500 text-xs mt-2">Preparando visualización</p>
+      </div>
+    </div>
+  ),
+});
 
 export default function Home() {
   const [selectedStation, setSelectedStation] = useState<RadioStation | null>(radioStations[0]);
@@ -202,8 +154,8 @@ export default function Home() {
 
         {/* Panel Derecho - Mapa Interactivo */}
         <div className="flex-1 relative bg-[#0a0a0c]">
-          {/* Google Maps Component */}
-          <GoogleMap 
+          {/* Leaflet Map Component */}
+          <MapComponent 
             stations={radioStations}
             selectedStation={selectedStation}
             onStationSelect={setSelectedStation}
