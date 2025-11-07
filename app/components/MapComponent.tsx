@@ -4,9 +4,10 @@ import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { LuRadioTower } from 'react-icons/lu';
+import { renderToStaticMarkup } from 'react-dom/server';
 import type { RadioStation, MapComponentProps } from '@/app/types';
 
-// Componente para actualizar la vista del mapa cuando cambia la estación seleccionada
 function MapViewController({ selectedStation }: { selectedStation: RadioStation | null }) {
   const map = useMap();
 
@@ -23,70 +24,91 @@ function MapViewController({ selectedStation }: { selectedStation: RadioStation 
   return null;
 }
 
-export default function MapComponent({ stations, selectedStation, onStationSelect }: MapComponentProps) {
+function MapRefSetter({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    mapRef.current = map;
+  }, [map, mapRef]);
+  
+  return null;
+}
+
+function ExternalMapRefSetter({ externalMapRef }: { externalMapRef?: React.MutableRefObject<any> }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (externalMapRef) {
+      externalMapRef.current = map;
+    }
+  }, [map, externalMapRef]);
+  
+  return null;
+}
+
+// Coordenadas centradas en Huánuco para vista general
+const DEFAULT_CENTER: [number, number] = [-9.5, -76.4];
+const DEFAULT_ZOOM = 9;
+
+const getStatusBadgeStyles = (status: string) => {
+  const normalized = status?.toLowerCase() ?? '';
+  if (normalized.includes('operativo')) {
+    return 'text-emerald-300 border-emerald-400/40 bg-emerald-500/10';
+  }
+  return 'text-amber-200 border-amber-400/40 bg-amber-500/10';
+};
+
+export default function MapComponent({ stations, selectedStation, onStationSelect, mapRef: externalMapRef }: MapComponentProps) {
   const mapRef = useRef<L.Map | null>(null);
 
-  // Calcular el centro del mapa basado en todas las estaciones
-  const calculateCenter = (): [number, number] => {
-    if (stations.length === 0) {
-      // Centro de Huancayo por defecto
-      return [-9.92882, -76.23989];
-    }
-
-    const avgLat = stations.reduce((sum, station) => sum + station.coordinates.lat, 0) / stations.length;
-    const avgLng = stations.reduce((sum, station) => sum + station.coordinates.lng, 0) / stations.length;
-
-    return [avgLat, avgLng];
-  };
-
-  // Crear iconos personalizados para los marcadores (más pequeños y precisos)
   const createCustomIcon = (station: RadioStation, isSelected: boolean) => {
-    const size = isSelected ? 8 : 6;
-    const iconHtml = `
-      <div style="
-        width: ${size * 2}px;
-        height: ${size * 2}px;
-        background-color: ${station.color};
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-        box-shadow: 0 0 ${isSelected ? '12px' : '6px'} ${station.color}80;
-        animation: ${isSelected ? 'pulse 2s infinite' : 'none'};
-      "></div>
-    `;
+    const size = isSelected ? 32 : 24;
+    const iconHtml = renderToStaticMarkup(
+      <div
+        style={{
+          width: size,
+          height: size,
+          backgroundColor: 'rgba(27, 39, 56, 0.95)',
+          borderRadius: '50%',
+          border: `2px solid ${station.color}`,
+          boxShadow: `0 0 ${isSelected ? 12 : 6}px ${station.color}66`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'transform 0.3s ease',
+        }}
+      >
+        <LuRadioTower size={isSelected ? 16 : 12} color="#ffffff" />
+      </div>
+    );
 
     return L.divIcon({
       html: iconHtml,
       className: 'custom-marker',
-      iconSize: [size * 2, size * 2],
-      iconAnchor: [size, size],
-      popupAnchor: [0, -size],
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2],
     });
   };
-
-  const center = calculateCenter();
 
   return (
     <div className="w-full h-full relative">
       <MapContainer
-        center={center}
-        zoom={13}
-        ref={mapRef}
+        center={DEFAULT_CENTER}
+        zoom={DEFAULT_ZOOM}
         className="w-full h-full z-0"
         zoomControl={false}
         attributionControl={true}
-        style={{ background: '#0a0a0c' }}
       >
-        {/* Capa de tiles con estilo oscuro personalizado */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          className="map-tiles"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Controlador de vista del mapa */}
+        <MapRefSetter mapRef={mapRef} />
+        <ExternalMapRefSetter externalMapRef={externalMapRef} />
         <MapViewController selectedStation={selectedStation} />
 
-        {/* Renderizar estaciones de radio */}
         {stations.map((station) => {
           const isSelected = selectedStation?.id === station.id;
 
@@ -105,7 +127,7 @@ export default function MapComponent({ stations, selectedStation, onStationSelec
                   className="custom-popup"
                   closeButton={false}
                 >
-                  <div className="bg-[#1a1a1c] p-4 rounded-lg border border-[#2a2a2a] shadow-xl min-w-[220px]">
+                  <div className="bg-[#1b2738]/95 p-4 rounded-lg border border-white/10 shadow-xl min-w-[220px]">
                     <h3 
                       className="font-bold text-lg mb-2 tracking-tight"
                       style={{ color: station.color }}
@@ -113,15 +135,25 @@ export default function MapComponent({ stations, selectedStation, onStationSelec
                       {station.name}
                     </h3>
                     <div className="space-y-1">
-                      <p className="text-[#FFA806] font-semibold text-base">
+                      <p className="text-white font-semibold text-base">
                         {station.frequency}
                       </p>
-                      <p className="text-[#ccc] text-sm">
+                      <p className="text-white/70 text-sm">
                         {station.location}
                       </p>
-                      <p className="text-[#888] text-xs mt-2">
-                        {station.signalStrength}
+                      <p className="text-white/60 text-xs">
+                        {station.address}
                       </p>
+                      <div className="flex flex-wrap gap-2 pt-2 text-[10px] font-semibold uppercase tracking-wider">
+                        <span className="px-2 py-1 rounded-full border border-white/15 text-white/70">
+                          {station.systemType}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full border ${getStatusBadgeStyles(station.status)}`}
+                        >
+                          {station.status}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </Popup>
@@ -130,7 +162,6 @@ export default function MapComponent({ stations, selectedStation, onStationSelec
         })}
       </MapContainer>
 
-      {/* Estilos adicionales para animaciones */}
       <style jsx global>{`
         @keyframes pulse {
           0%, 100% {
@@ -160,35 +191,12 @@ export default function MapComponent({ stations, selectedStation, onStationSelec
         }
 
         .leaflet-popup-tip {
-          background: #1a1a1c !important;
-          border: 1px solid #2a2a2a !important;
+          background: #1b2738 !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
 
         .custom-popup .leaflet-popup-close-button {
           display: none;
-        }
-
-        /* Personalización del control de atribución */
-        .leaflet-control-attribution {
-          background: rgba(26, 26, 28, 0.8) !important;
-          color: #888 !important;
-          font-size: 10px !important;
-          padding: 2px 6px !important;
-          border-radius: 4px !important;
-        }
-
-        .leaflet-control-attribution a {
-          color: #F28211 !important;
-        }
-
-        /* Eliminar el fondo blanco por defecto */
-        .leaflet-container {
-          background: #0a0a0c !important;
-        }
-
-        /* Mejorar la apariencia de los tiles */
-        .map-tiles {
-          filter: brightness(0.9) contrast(1.1);
         }
       `}</style>
     </div>

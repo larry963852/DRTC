@@ -6,29 +6,38 @@
  * Representa una estación de radio con toda su información
  */
 export interface RadioStation {
-  /** Identificador único de la estación */
+  /** Unique station identifier */
   id: number;
-  /** Nombre de la estación */
+
+  /** Station name */
   name: string;
-  /** Frecuencia de transmisión (ej: "98.5 MHz") */
+
+  /** Transmission frequency (e.g., "TV 8 / FM 101.3 MHz") */
   frequency: string;
-  /** Ubicación principal */
+
+  /** Main location */
   location: string;
-  /** Dirección completa */
+
+  /** Full address */
   address: string;
-  /** Nivel de señal (ej: "Strong (95%)") */
-  signalStrength: string;
-  /** Rango de transmisión (ej: "50 km radius") */
-  transmissionRange: string;
-  /** Descripción de la estación */
+
+  /** Type of transmission system (e.g., "TV-FM", "FM", "TV") */
+  systemType: string;
+
+  /** Operational status (e.g., "Operativo", "Inactivo") */
+  status: string;
+
+  /** Description or technical report */
   description: string;
-  /** Color identificativo en formato hexadecimal */
+
+  /** Identifying color in hexadecimal format */
   color: string;
-  /** Coordenadas geográficas */
+
+  /** Geographic coordinates */
   coordinates: {
-    /** Latitud */
+    /** Latitude */
     lat: number;
-    /** Longitud */
+    /** Longitude */
     lng: number;
   };
 }
@@ -43,4 +52,6 @@ export interface MapComponentProps {
   selectedStation: RadioStation | null;
   /** Callback cuando se selecciona una estación */
   onStationSelect: (station: RadioStation) => void;
+  /** Referencia al mapa de Leaflet */
+  mapRef?: React.MutableRefObject<L.Map | null>;
 }
