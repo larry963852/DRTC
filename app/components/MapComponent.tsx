@@ -34,7 +34,7 @@ function MapRefSetter({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null>
   return null;
 }
 
-function ExternalMapRefSetter({ externalMapRef }: { externalMapRef?: React.MutableRefObject<any> }) {
+function ExternalMapRefSetter({ externalMapRef }: { externalMapRef?: React.MutableRefObject<L.Map | null> }) {
   const map = useMap();
   
   useEffect(() => {

@@ -2,6 +2,8 @@
  * Tipos compartidos para el proyecto DRTC - Radio Stations Explorer
  */
 
+import type L from 'leaflet';
+
 /**
  * Representa una estación de radio con toda su información
  */
